@@ -1,0 +1,266 @@
+services:
+  # =============================================
+  # BASE DE DATOS — Aplicación (inventory_bd)
+  # =============================================
+  postgres-app:
+    image: postgres:17-alpine
+    container_name: inventory-postgres-app
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_APP_NAME:-inventory_bd}
+      POSTGRES_USER: ${DB_APP_USER:-root}
+      POSTGRES_PASSWORD: ${DB_APP_PASSWORD:-1234}
+    volumes:
+      - postgres_app_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_APP_USER:-root} -d ${DB_APP_NAME:-inventory_bd}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inventory-network
+
+  # =============================================
+  # BASE DE DATOS — Keycloak (keycloak_bd)
+  # =============================================
+  postgres-keycloak:
+    image: postgres:17-alpine
+    container_name: inventory-postgres-keycloak
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_KC_NAME:-keycloak_bd}
+      POSTGRES_USER: ${DB_KC_USER:-keycloak_user}
+      POSTGRES_PASSWORD: ${DB_KC_PASSWORD:-kc_secure_2024}
+    volumes:
+      - postgres_kc_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_KC_USER:-keycloak_user} -d ${DB_KC_NAME:-keycloak_bd}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inventory-network
+
+  # =============================================
+  # KEYCLOAK — Autenticación / SSO
+  # =============================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: inventory-keycloak
+    restart: unless-stopped
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/${DB_KC_NAME:-keycloak_bd}
+      KC_DB_USERNAME: ${DB_KC_USER:-keycloak_user}
+      KC_DB_PASSWORD: ${DB_KC_PASSWORD:-kc_secure_2024}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KEYCLOAK_ADMIN: ${KC_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
+    command: start-dev --import-realm
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres-keycloak:
+        condition: service_healthy
+    networks:
+      - inventory-network
+
+  # =============================================
+  # REDIS — Cache y sesiones
+  # =============================================
+  redis:
+    image: redis:7-alpine
+    container_name: inventory-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inventory-network
+
+  # =============================================
+  # MINIO — Almacenamiento de objetos
+  # =============================================
+  minio:
+    image: minio/minio
+    container_name: inventory-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - inventory-network
+
+  # =============================================
+  # BACKEND — NestJS API
+  # =============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: inventory-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${BACKEND_PORT:-3000}
+      DATABASE_URL: postgresql://${DB_APP_USER:-root}:${DB_APP_PASSWORD:-1234}@postgres-app:5432/${DB_APP_NAME:-inventory_bd}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # JWKS se resuelve contra keycloak (red Docker). El token del navegador lleva iss con la URL pública (p. ej. localhost:8080).
+      KC_BASE_URL: http://keycloak:8080
+      KC_PUBLIC_URL: ${KC_PUBLIC_URL:-http://localhost:8080}
+      KC_REALM: ${KC_REALM:-inventory}
+      KC_ADMIN_REALM: ${KC_ADMIN_REALM:-master}
+      KC_CLIENT_ID: ${KC_CLIENT_ID:-inventory-app}
+      KC_ADMIN_USER: ${KC_ADMIN_USER:-admin}
+      KC_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
+      KEYCLOAK_WEBHOOK_SECRET: ${KEYCLOAK_WEBHOOK_SECRET:-}
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-inventory-documents}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      BACKUP_STORAGE_PATH: ${BACKUP_STORAGE_PATH:-/app/storage/backups}
+      DOCUMENTS_STORAGE_PATH: ${DOCUMENTS_STORAGE_PATH:-/app/storage/documents}
+      INVOICE_STORAGE_PATH: ${INVOICE_STORAGE_PATH:-/app/storage/invoices}
+      INVOICE_FORCE_REGENERATE_ARTIFACTS: ${INVOICE_FORCE_REGENERATE_ARTIFACTS:-false}
+      DIAN_PROVIDER_MODE: ${DIAN_PROVIDER_MODE:-internal}
+      DIAN_HTTP_API_BASE: ${DIAN_HTTP_API_BASE:-}
+      DIAN_HTTP_BEARER_TOKEN: ${DIAN_HTTP_BEARER_TOKEN:-}
+      DIAN_HTTP_TIMEOUT_MS: ${DIAN_HTTP_TIMEOUT_MS:-20000}
+    ports:
+      # Vite en el host (localhost:5173) hace proxy a 127.0.0.1:3000 por defecto.
+      - "${BACKEND_HOST_PORT:-3000}:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - inventory_app_backups:/app/storage/backups
+      - inventory_app_documents:/app/storage/documents
+      - inventory_app_invoices:/app/storage/invoices
+    depends_on:
+      postgres-app:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    # wget viene en la imagen node:alpine (no hace falta curl en el Dockerfile)
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -q --spider -T 4 "http://127.0.0.1:$$PORT/api/health/live" || exit 1',
+        ]
+      interval: 15s
+      timeout: 8s
+      retries: 6
+      start_period: 240s
+    networks:
+      - inventory-network
+
+  # =============================================
+  # FRONTEND — React + Vite
+  # =============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: inventory-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost/api}
+      VITE_KC_URL: ${VITE_KC_URL:-http://localhost:8080}
+      VITE_KC_REALM: ${VITE_KC_REALM:-inventory}
+      VITE_KC_CLIENT_ID: ${VITE_KC_CLIENT_ID:-inventory-app}
+      VITE_NETDATA_URL: ${VITE_NETDATA_URL:-http://localhost:19999}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - inventory-network
+
+  # =============================================
+  # NGINX — Reverse Proxy
+  # =============================================
+  nginx:
+    image: nginx:alpine
+    container_name: inventory-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    # Esperar a que la API responda /api/health/live; si Nginx arranca antes, el entrypoint del backend
+    # (npm install + migrate) aún no ha levantado Nest y el proxy devuelve HTTP 502.
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    networks:
+      - inventory-network
+
+  # =============================================
+  # NETDATA — Monitoreo del sistema
+  # =============================================
+  netdata:
+    image: netdata/netdata
+    container_name: inventory-netdata
+    restart: unless-stopped
+    ports:
+      - "${NETDATA_PORT:-19999}:19999"
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - netdata_config:/etc/netdata
+      - netdata_lib:/var/lib/netdata
+      - netdata_cache:/var/cache/netdata
+    networks:
+      - inventory-network
+
+# =============================================
+# VOLUMES
+# =============================================
+volumes:
+  postgres_app_data:
+  postgres_kc_data:
+  redis_data:
+  minio_data:
+  netdata_config:
+  netdata_lib:
+  netdata_cache:
+  inventory_app_backups:
+  inventory_app_documents:
+  inventory_app_invoices:
+
+# =============================================
+# NETWORKS
+# =============================================
+networks:
+  inventory-network:
+    driver: bridge

@@ -1,0 +1,32 @@
+# Escribir en .cursorrules
+@"
+1. Selectores: Usa SIEMPRE locators semánticos y accesibles como getByRole. NUNCA CSS frágiles.
+2. Esperas: Usa aserciones web-first. Prohibido page.waitForTimeout().
+3. Ahorro de Tokens: Usa Playwright CLI (npx playwright test) en lugar de MCP.
+"@ | Out-File -FilePath ".\.cursorrules" -Encoding UTF8
+
+# Crear carpetas de las skills
+New-Item -Path ".\.agents\skills\postgresql-dev" -ItemType Directory -Force
+New-Item -Path ".\.agents\skills\senior-architect-thinker" -ItemType Directory -Force
+
+# Escribir la skill de PostgreSQL
+@"
+---
+name: postgresql-dev
+description: Usa esta habilidad para diseñar esquemas, escribir SQL, optimizar rendimiento o lógica de backend.
+---
+# Guía PostgreSQL
+Usa UUIDv4 o BIGSERIAL para PKs. Implementa índices B-Tree o GIN según aplique. Evita consultas N+1.
+"@ | Out-File -FilePath ".\.agents\skills\postgresql-dev\SKILL.md" -Encoding UTF8
+
+# Escribir la skill de Arquitecto
+@"
+---
+name: senior-architect-thinker
+description: Usa esta habilidad para soluciones complejas, garantizar código limpio y cero errores.
+---
+# Marco Cognitivo
+Fase de Reflexión: Abre un bloque de <thinking> antes de codificar. Evalúa riesgos (red, BD) y aplica código limpio.
+"@ | Out-File -FilePath ".\.agents\skills\senior-architect-thinker\SKILL.md" -Encoding UTF8
+
+# Comprobar que se guardó bien

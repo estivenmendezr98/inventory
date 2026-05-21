@@ -1,0 +1,146 @@
+{
+  "realm": "inventory",
+  "enabled": true,
+  "displayName": "Sistema de Inventario",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyCodeReusable": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "SUPER_ADMINISTRADOR",
+        "description": "Super Administrador - Acceso total al sistema",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "ADMINISTRADOR",
+        "description": "Administrador - Gestión operativa del negocio",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "CAJERO",
+        "description": "Cajero - Operaciones de venta y caja",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "inventory-app",
+      "name": "Inventory App",
+      "description": "Sistema de Inventario - Frontend SPA",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "rootUrl": "http://localhost",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost/*",
+        "http://localhost:5173/*",
+        "http://127.0.0.1/*",
+        "http://127.0.0.1:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost",
+        "http://localhost:5173",
+        "http://127.0.0.1",
+        "http://127.0.0.1:5173"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "superadmin",
+      "email": "admin@inventory.local",
+      "firstName": "Super",
+      "lastName": "Administrador",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SUPER_ADMINISTRADOR"
+      ]
+    },
+    {
+      "username": "administrador",
+      "email": "admin2@inventory.local",
+      "firstName": "Admin",
+      "lastName": "Usuario",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMINISTRADOR"
+      ]
+    },
+    {
+      "username": "cajero",
+      "email": "cajero@inventory.local",
+      "firstName": "Cajero",
+      "lastName": "Usuario",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "cajero123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CAJERO"
+      ]
+    }
+  ]
+}

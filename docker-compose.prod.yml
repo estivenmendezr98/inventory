@@ -1,0 +1,14 @@
+# Composición de producción (merge con docker-compose.yml).
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Ajusta NODE_ENV. Para despliegue real: construir imágenes sin bind-mount del código,
+# fijar secretos por secret manager y persistir volúmenes (BD, backups, documentos, facturas).
+
+services:
+  backend:
+    environment:
+      NODE_ENV: production
+
+  frontend:
+    environment:
+      NODE_ENV: production

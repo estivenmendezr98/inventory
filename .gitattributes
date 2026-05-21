@@ -1,0 +1,2 @@
+# Scripts de shell: siempre LF (Docker / Alpine fallan con CRLF).
+*.sh text eol=lf

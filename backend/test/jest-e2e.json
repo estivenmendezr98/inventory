@@ -1,0 +1,19 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testMatch": ["<rootDir>/test/**/*.e2e-spec.ts"],
+  "moduleNameMapper": {
+    "^@keycloak/keycloak-admin-client$": "<rootDir>/test/mocks/keycloak-admin-client.js"
+  },
+  "transform": {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "tsconfig": "<rootDir>/tsconfig.e2e.json"
+      }
+    ]
+  },
+  "testTimeout": 60000,
+  "passWithNoTests": true
+}

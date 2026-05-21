@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InvoiceLocal phase="1" xmlns="urn:inventory:invoice:local">
+  <Number>FE-4</Number>
+  <Date>2026-05-12T20:59:58.353Z</Date>
+  <CustomerName>estiven</CustomerName>
+  <CustomerDoc>CC 1073478374</CustomerDoc>
+  <Resolution>Pendiente de configuración (actualice en Facturación)</Resolution>
+  <Totals subtotal="3000" tax="0" total="3000" />
+  <Lines>
+  <Line><Sku>223</Sku><Name>Go 4</Name><Qty>1</Qty><Subtotal>3000</Subtotal></Line>
+  </Lines>
+</InvoiceLocal>
