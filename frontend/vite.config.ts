@@ -46,6 +46,7 @@ export default defineConfig(async ({ mode }) => {
   }
 
   return {
+    base: env.VITE_BASE_PATH || '/',
     plugins: [react()],
     resolve: {
       alias: {

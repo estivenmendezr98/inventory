@@ -57,6 +57,7 @@ services:
       KC_DB_PASSWORD: ${DB_KC_PASSWORD:-kc_secure_2024}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /inventory/keycloak
       KC_PROXY_HEADERS: xforwarded
       KEYCLOAK_ADMIN: ${KC_ADMIN_USER:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
@@ -129,7 +130,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       # JWKS se resuelve contra keycloak (red Docker). El token del navegador lleva iss con la URL pública (p. ej. localhost:8080).
-      KC_BASE_URL: http://keycloak:8080
+      KC_BASE_URL: ${KC_BASE_URL:-http://keycloak:8080}
       KC_PUBLIC_URL: ${KC_PUBLIC_URL:-http://localhost:8080}
       KC_REALM: ${KC_REALM:-inventory}
       KC_ADMIN_REALM: ${KC_ADMIN_REALM:-master}
@@ -191,6 +192,7 @@ services:
     container_name: inventory-frontend
     restart: unless-stopped
     environment:
+      VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
       VITE_API_URL: ${VITE_API_URL:-http://localhost/api}
       VITE_KC_URL: ${VITE_KC_URL:-http://localhost:8080}
       VITE_KC_REALM: ${VITE_KC_REALM:-inventory}
