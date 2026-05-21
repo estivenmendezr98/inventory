@@ -48,3 +48,8 @@ coverage/
 
 # Backups SQL generados por la API (desarrollo local)
 backend/storage/backups/*.sql
+
+# Entorno local / secretos
+.env
+.env.*
+!.env.example
