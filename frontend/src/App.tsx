@@ -147,7 +147,7 @@ export default function App() {
               onClick={() => {
                 sessionStorage.clear();
                 localStorage.clear();
-                window.location.href = '/';
+                window.location.href = import.meta.env.BASE_URL;
               }}
               className="rounded-lg border border-input bg-background px-6 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >

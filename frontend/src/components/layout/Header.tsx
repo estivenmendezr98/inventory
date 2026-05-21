@@ -40,7 +40,7 @@ export function Header() {
       }
     }
     sessionStorage.removeItem('inventory_app_session_id');
-    keycloak.logout({ redirectUri: window.location.origin });
+    keycloak.logout({ redirectUri: `${window.location.origin}${import.meta.env.BASE_URL}` });
   };
 
   const initials = user
