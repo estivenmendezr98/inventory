@@ -23,7 +23,10 @@ import { BackupsPage } from './features/backups/BackupsPage';
 import { AuditPage } from './features/audit/AuditPage';
 import { DocumentsPage } from './features/documents/DocumentsPage';
 
-export const router = createBrowserRouter([
+const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
+
+export const router = createBrowserRouter(
+  [
   {
     path: '/',
     element: <AppShell />,
@@ -53,4 +56,6 @@ export const router = createBrowserRouter([
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
-]);
+  ],
+  { basename: routerBasename },
+);
